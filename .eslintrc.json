@@ -1,0 +1,15 @@
+{
+    "env": {
+        "browser": true,
+        "commonjs": true,
+        "es2021": true
+    },
+    "extends": [
+        "bitovi",
+        "rules/eslint/open-source/on"
+    ],
+    "parserOptions": {
+        "ecmaVersion": 12
+    },
+    "rules": {}
+}
