@@ -14,288 +14,359 @@
 // THIS SOFTWARE.
 
 // The 'Template' is where the basic HTML structure and styling is defined.
-// The navbar elements are then injected into this template.
-const { template } = require('./template');
+// The navbar items are then injected into the <ul> tags found in this template.
+const template = `
+    <style>
+        sticky-nav::-webkit-scrollbar {
+            display: none;
+        }
+        
+        sticky-nav {
+            overflow-x: scroll;
+            overflow-y: hidden;
+            width: 100%;
+            display: block;
+        }
+
+        sticky-nav.sticky-nav-fixed {
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+        
+        sticky-nav>ul {
+            display: -webkit-box;
+        }
+        
+        sticky-nav>ul>li {
+            display: block;
+            float: left;
+            cursor: pointer;
+            text-decoration: none;
+        }
+    </style>
+
+    <ul class='sticky-nav-inner'></ul>
+`;
+
 
 const init = () => {
-
-    // Checks to make sure that the document has been defined and that it is ready to inject the navbar into.
-    // If the navbar has has been imported before the document is ready, it will retry every .5 seconds until it can be inject.
-    if (typeof document === 'undefined' || document.readyState !== 'complete') {
-        setTimeout(() => {
-            init();
-        }, 500);
-
-        return false;
-    }
-
-    // Creates an template HTML element.
-    const stickyNavbarTemplate = document.createElement("template");
-
-    // Inside of the template element, we inject the HTML and styling we imported from ./template.js
-    stickyNavbarTemplate.innerHTML = template;
-
-    // We create a class that will be used to create an instance of this web component.
-    // Note that while it extends HTML element, it does not inherit any of the attributes
-    // generally associated with HTML elements, such as ID, etc.
-    class StickyNavbar extends HTMLElement {
+    class StickyNav extends HTMLElement {
         constructor() {
             super();
 
-            // User defined attributes // START //
+            // The 'scrollContainerSelector' property references the scroll-container-selector attribute optionally defined
+            // by the user. This attributes lets the consumer define what element will be scrolled by the sticky-nav ...
+            // component + where the section headings are. If not defined, it is assumed to be the 'window'.
+            this.scrollContainerSelector = this.getAttribute('scrollable-container-selector');
 
-            // The containerTag attribute is the tag (HTML element, class, or ID) that the navigation will be injected into.
-            // By default, it will be injected into its own tags (<sticky-nav />) implemented by the consuming application.
-            this.containerTag = this.getAttribute('container') || 'sticky-nav';
+            // The 'headingSelector' property references the 'heading-selector' attribute optionally defined by the user.
+            // This attribute determines what elements are used as 'headings' which be used to populate the navbar.
+            // If not provided, it will fallback on a H2 tag.
+            this.headingSelector = this.getAttribute('heading-selector') || 'h2';
 
-            // The headingTag attribute is the tag (HTML element, class, or ID) that will be used to create the navbar elements.
-            // By default, it will scour the <body> for H2 tags.
-            this.headingTag = this.getAttribute('heading') || 'h2';
-
-            // The sticky attribute determines whether the 'fixed' class gets added to the outermost div. 
-            // This class defaults to having a 'fixed' position style property.
-            // By default, it will assume the consuming application wants a sticky navbar.
-            this.sticky = this.getAttribute('sticky') || true;
-
-            // User defined attributes // END //
-
-            // This creates a reference to the parent node of the navbar.
-            const containerNode = document.querySelector(this.containerTag);
-
-            // This creates a reference to the template node of the navbar.
-            const templateNode = document.importNode(stickyNavbarTemplate.content, true);
-
-            // This injects the template node into the container node.
-            containerNode.append(templateNode);
-
-            // This is where we define convenience properties to easily access the inner and outer divs
-            // we defined in the HTML found in the template.
-            this.outerEl = document.querySelector("#sticky-nav-outer");
-            this.innerEl = document.querySelector("#sticky-nav-inner");
-
-            // Add a event listener that will update the highlighting as the user scrolls.
-            window.addEventListener("scroll", () => {
-                this.updateHighlighting();
-            });
-
-            // This method does the initial call to populate the navbar elements.
-            // Elements might be added or removed; but this is the initial state.
-            this.populateElements();
-
-            // This method watches the body node for any changes that match the section tag we are tracking.
-            // If there are any changes, it will repopulate the elements in the navbar.
-            this.observeMutations();
+            // The 'stick' property references the 'stick' attribute optionally defined by the user.
+            // This attribute determines whether or not have the navbar to 'stick' as the user scrolls ...
+            // down the page. If not provided, it will fallback on true.
+            this.stick = this.getAttribute('stick') === 'true';
         }
 
-        // This method handles the population of the navbar elements and watches for changes
-        // to either add remove them.
-        populateElements() {
-            // Create the template that we will use to wrap all the navbar elements.
-            const navbarElementsTemplate = document.createElement("template");
+        // Draw all the section headings as items in the nav.
+        drawNavItems() {
+            // Check if there were any section headings that changed before redrawing.
+            if (this.nodesAreSame(this.currentNodeArr, this.getSectionHeadings())) {
+                return;
+            }
 
-            // Grab all the section header nodes that we want to link to via the navbar.
-            this.elements = document.querySelectorAll(this.headingTag);
+            const navbarItemsTemplate = document.createElement("template");
+            const sectionHeadings = this.getSectionHeadings();
 
-            // Initialize an array that will be used store the vertical position of each of the section headers. 
-            this.positions = [];
+            let navbarItems = "";
 
-            // Intitialize a string that all of the nevbar elements will be added to.
-            let navbarElements = "";
+            // Go through each of the section headings and create navbar items.
+            sectionHeadings.forEach((el, idx) => {
+                const { innerText } = el;
 
-            // Loop through all of the section header nodes.
-            this.elements.forEach((el, idx) => {
-                // Grab the name of the section header node and its vertical position.
-                const { innerText: label, offsetTop } = el;
-
-                // Grab the ID from the current section header node. 
                 let id = el.id;
 
-                // If this section header node does not have an id, let's add one.
+                // If this section heading does not have an ID, create one for it.
                 if (!id) {
                     id = `sticky-nav-el-${idx}`;
                     el.id = id;
                 }
 
-                // Let's push the id its position of this section header node into the positions array.
-                this.positions.push({
-                    // This section starts when it's 2/3s of the way into the viewport.
-                    startY: offsetTop - window.innerHeight / 3,
-                    id,
-                });
-
-                // Add a new navbar element to the navbarElements string;
-                navbarElements += `<div class="sticky-nav-element" id="selection-element-${id}">${label}</div>`;
+                // Concat this navbar item into the navbarItems string.
+                navbarItems += `<li class="sticky-nav-item" id="sticky-nav-item-${id}">
+                    <a>${innerText}</a>
+                </li>`;
             });
 
-            // Define the innerHTML of the template to the be string with all of the navbar elements in it.
-            navbarElementsTemplate.innerHTML = navbarElements;
+            navbarItemsTemplate.innerHTML = navbarItems;
 
-            // Replace all the contents/children of the inner navbar div (that is the direct parent of the 
-            // all the navbar elements).
-            this.innerEl.replaceChildren(navbarElementsTemplate.content.cloneNode(true));
+            this.innerEl.replaceChildren(navbarItemsTemplate.content.cloneNode(true));
+            const navbarItemNodes = this.querySelectorAll('li');
 
-            // Update the barElements property to reference the latest iteration of navbar elements.
-            this.barElements = document.querySelectorAll('.sticky-nav-element');
-
-            // For each of the navbar elements:
-            this.elements.forEach(element => {
-                // If a user clicks one:
-                document.querySelector(`#selection-element-${element.id}`).addEventListener('click', () => {
-                    const { innerText: label, id, offsetTop } = element;
-
-                    // This updates the URL to include the fragment/id of the navbar element being click links to.
+            // For each of the nodes, add a click event that will scroll to that section heading.
+            navbarItemNodes.forEach((navbarItemNode, idx) => {
+                navbarItemNode.addEventListener('click', () => {
+                    const { innerText: label, id } = sectionHeadings[idx];
                     history.replaceState({}, label, `#${id}`);
-
-                    // This scrolls the window to the element the navbar element being click links to.
-                    window.scrollTo(0, offsetTop - 70);
+                    sectionHeadings[idx].scrollIntoView();
                 });
             });
 
-            // Re-apply the logic that determines what navbar element should be 'marked' as active.
-            this.updateHighlighting();
+            // Set a property to help determine if the navbar items need to be re-rendered later.
+            this.currentNodeArr = this.getSectionHeadings();
         }
 
-        // This method watches for changes to the body node and repopulates the navbar elements if needed.
-        observeMutations() {
-            // Select the node that will be observed for mutations
-            const targetNode = document.querySelector('body');
+        // Updates what item in the navbar is currently 'active' 
+        updateActiveNavItem() {
+            const headingPositions = this.getSectionHeadingsWithPositions();
+            let activeNavItem = headingPositions[0] || {};
+            let updatedActiveItem = {};
+            const scrollableContainer = this.getScrollableContainer();
 
-            // Options for the observer (which mutations to observe)
+            // If the user has not scrolled down far enough, we know they are still on the first item.
+            if (headingPositions.length === 0 || scrollableContainer.scrollY <= headingPositions[0].startY) {
+                updatedActiveItem = headingPositions[0];
+            } else {
+                // Find out what navbar item is currently active by comparing the scroll position to the ... 
+                // position of the current and next section heading.
+                for (var i = 0; i < headingPositions.length; i++) {
+                    let currentHeadingPosition = headingPositions[i];
+
+                    if (i === headingPositions.length - 1) {
+                        // If the user is at the last item, so we know that it has to be active.
+                        updatedActiveItem = currentHeadingPosition;
+                    } else {
+                        // The user is looking at a section heading before the last and after the first.
+                        const next = headingPositions[i + 1];
+
+                        // If they are located after the start of the current position, but are still not ...
+                        // at the next position, we have the section heading that is active.
+                        if (
+                            scrollableContainer.scrollY >= currentHeadingPosition.startY &&
+                            scrollableContainer.scrollY < next.startY
+                        ) {
+                            updatedActiveItem = currentHeadingPosition;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Verify that the updatedActiveItem has been set; otherwise use the current/default activeNavItem.
+            if (updatedActiveItem && updatedActiveItem.id) {
+                activeNavItem = updatedActiveItem;
+            }
+
+            // Check if the the activeNavItem has changed since the last time we updated the active classes on the nav items.
+            // Only update if we need to; kind of expensive to do.
+            if (activeNavItem.id !== this.activeHeaderId && this.getSectionHeadings().length > 0) {
+                // Remove the active class from the previously selected nav item. 
+                this.querySelectorAll("li.sticky-nav-active")
+                    .forEach(node => {
+                        node
+                            .classList
+                            .remove("sticky-nav-active");
+                    });
+
+                // Add the active class to the currently selected nav item.
+                this.querySelector(`li#sticky-nav-item-${activeNavItem.id}`)
+                    .classList
+                    .add("sticky-nav-active");
+
+                // Keeps the active item scrolled to the far left.
+                const innerLeft = this.innerEl.offsetLeft;
+                const activeLeft = this.querySelector(`ul>li#sticky-nav-item-${activeNavItem.id}`).offsetLeft;
+                this.scrollLeft = activeLeft - innerLeft;
+
+                // Set a property to determine whether or not to re-render in the future.
+                this.activeHeaderId = activeNavItem.id;
+            }
+        }
+
+        // Adds a 'sticky-nav-fixed' class to the <sticky-nav> component if user has scrolls passed it + it is enabled by consumer.
+        updateSticky() {
+            if (this.stick) {
+
+                const scrollableContainer = this.getScrollableContainer();
+                const menuPosY = this.offsetHeight;
+
+                if (scrollableContainer.scrollY >= menuPosY + this.height) {
+                    this.classList.add("sticky-nav-fixed");
+                } else {
+                    this.classList.remove("sticky-nav-fixed");
+                }
+            }
+        }
+
+        // Watches for changes using the mutationObserver and updates everything if anything changes.
+        observeMutations() {
+            const targetNode = document.querySelector('body');
             const config = { attributes: true, childList: true, subtree: true };
 
-            // Callback function to execute when mutations are observed
-            const callback = mutationsList => {
-                // This flag will be flipped if we determine a node was added or removed.
-                let refreshNeeded = false;
-
-                // Loop through any changes to the body nody.
-                for (const mutation of mutationsList) {
-
-                    // If the change was the addition or removal of the child elements.
-                    if (mutation.type === 'childList') {
-
-                        // For each of the nodes in the new state:
-                        mutation.addedNodes.forEach(e => {
-
-                            // If the node changed is the tag we're interested in
-                            if (e.tagName === this.headingTag.toUpperCase()) {
-
-                                // Set flag to repopulate the navbar elements.
-                                refreshNeeded = true;
-                            }
-                        });
-
-                        // Update the elements property to include any new sections added.
-                        this.elements = document.querySelectorAll(this.headingTag);
-                    }
-                }
-
-                // If the refresh needed flag is set:
-                if (refreshNeeded) {
-                    // Repopulate the the elements in the navbar.
-                    this.populateElements();
-                }
+            const callback = () => {
+                this.drawNavItems();
+                this.updateActiveNavItem();
+                this.updateSticky();
             };
 
-            // Create an observer instance linked to the callback function
-            this.observer = new MutationObserver(callback);
-
-            // Start observing the target node for configured mutations
-            this.observer.observe(targetNode, config);
+            this.mutationObserver = new MutationObserver(callback);
+            this.mutationObserver.observe(targetNode, config);
         }
 
+        // Watches the scroll and updates what is active + if the <sticky-nav> should be sticky or not.
+        observeScrolling() {
+            this.scrollEventListener = this.getScrollableContainer().node.addEventListener("scroll", throttle(() => {
+                this.updateActiveNavItem();
+                this.updateSticky();
+            }, 100));
+        }
 
-        // This helper method udpates what elements is current marked as active.
-        updateHighlighting() {
-            // Initialize the current currently 'active' element to the first element, if there are elements
-            // or to an empty object if there aren't any
-            let active = this.positions[0] || {};
+        // Watches the resiving and updates what is active + if the <sticky-nav> should be sticky or not.
+        observeResizing() {
+            this.resizeEventListener = this.getScrollableContainer().node.addEventListener("resize", () => {
+                if (this.nodesAreSame(this.currentNodeArr, this.getSectionHeadings())) {
+                    this.updateActiveNavItem();
+                    this.updateSticky();
+                }
+            });
+        }
 
-            // Initialize an empty object that will house any newly selected element before being assigned
-            // the the active state.
-            let newEl = {};
+        // Determines if two arrays of nodes are the same.
+        nodesAreSame(oldNodeArr, newNodeArr) {
+            // Check if the lengths are the same.
+            if (!oldNodeArr || oldNodeArr.length !== newNodeArr.length) {
+                return false;
+            }
 
-            // Get the vertical scroll position of the top menu. 
-            const menuPosY = this.outerEl.offsetTop;
-
-            // If the user doesn't want the the navbar to be sticky they turn this flag off.
-            if (this.sticky) {
-
-                // If the user has scrolled past the menu, add the 'fixed' class.
-                if (window.scrollY >= menuPosY + 5) {
-                    this.outerEl.classList.add("fixed");
-
-                    // If the users has the scrolled up to where menu in would be in their viewport, 
-                    // remove the 'fixed' class.
-                } else {
-                    this.outerEl.classList.remove("fixed");
+            // Do simple check to see if nodes and their orders are the same.
+            for (var i = 0; i < oldNodeArr.length; i++) {
+                if (oldNodeArr[i] !== newNodeArr[i]) {
+                    return false;
                 }
             }
 
-            // For all of the section headers:
-            for (var i = 0; i < this.positions.length; i++) {
+            return true;
+        }
 
-                // The current section header in the loop.
-                let current = this.positions[i];
+        // Gets the container the consumer specified by the attribute 'scrollable-container-selector'.
+        // If the user does not provide a selector, we assume they want the window. The method allows us ...
+        // us to use a common interface, regardless of whether the consumer selects a div, article, etc. ... 
+        // or we use the window to scroll.
+        getScrollableContainer() {
+            if (!this.scrollContainerSelector) {
+                // The consumer has not specified a container to use; we assume they want the window.
+                const { scrollY, innerHeight } = window;
 
-                // If this hits, it means that the users is scrolled all the way to the bottom
-                // so we know that they the last navbar element should be marked as 'active'.
-                if (i === this.positions.length - 1) {
-                    active = current;
-                } else {
-                    // Look at the next elements position and the current elements position.
-                    // If the user is scrolled to where they are after one element (current), but not yet
-                    // at the next element (next), we know the current element is active.
-                    let next = this.positions[i + 1];
-                    if (
-                        window.scrollY >= current.startY &&
-                        window.scrollY < next.startY
-                    ) {
-                        newEl = current;
-                        // If we have the element the user is looking at, we break the loop.
-                        break;
-                    }
+                return {
+                    node: window,
+                    scrollY,
+                    innerHeight,
+                };
+            } else {
+                // The user has specified a container; we will use that.
+                const node = document.querySelector(this.scrollContainerSelector);
+
+                return {
+                    node,
+                    scrollY: node.scrollTop,
+                    innerHeight: node.offsetHeight,
                 }
-            }
-
-            // Make the active element the new element currently scrolled to
-            active = newEl;
-
-            // Verify there are any elements to inject into the navbar.
-            if (this.elements.length > 0) {
-
-                // Remove the 'active' class from all of the navbar elements.
-                document
-                    .querySelectorAll(".sticky-nav-element")
-                    .forEach((e) => e.classList.remove("active"));
-
-                // Add an 'active' class to the element we determined as being viewed.
-                document
-                    .querySelector(`#selection-element-${active.id}`)
-                    .classList
-                    .add("active");
-
-                // Get how where the inner navbar container is from the leftside of the viewport.
-                const innerLeft = this.innerEl.offsetLeft;
-
-                // Get how far left the active element is in the navbar from the leftside of the viewport.
-                const activeLeft = document.querySelector(`#selection-element-${active.id}`).offsetLeft;
-
-                // See how far we should scroll the inner navbar container to make the active element left-aligned.
-                this.outerEl.scrollLeft = activeLeft - innerLeft;
             }
         }
 
-        // A built-in method for web components. This will run when the element is removed from the consuming
-        // application's page, i.e. they go to a new page.
+        // Get the section headers specified by the attribute 'header-selector'. If no selector is provided, ...
+        // we assume they want a H2 tag. Additionally, we only look inside of the element defined by the user ...
+        // using the 'scrollable-conainter-selector'.
+        getSectionHeadings() {
+            if (this.scrollContainerSelector) {
+                return this.getScrollableContainer().node.querySelectorAll(this.headingSelector);
+            } else {
+                return document.querySelectorAll(this.headingSelector);
+            }
+        }
+
+        // Get the headings and positions of all the section headings.
+        getSectionHeadingsWithPositions() {
+            let headingPositions = [];
+
+            // For each of the section headings, determine its position. 
+            this.getSectionHeadings().forEach((sectionHeadingNode, idx) => {
+                let { offsetTop, id } = sectionHeadingNode;
+
+                if (!id) {
+                    id = `sticky-nav-el-${idx}`;
+                    sectionHeadingNode.id = id;
+                }
+
+                headingPositions.push({
+                    startY: offsetTop - this.getScrollableContainer().innerHeight / 3,
+                    id,
+                });
+            });
+
+            // Return the section headings hydrated with their position data.
+            return headingPositions;
+        }
+
+        // Lifecycle hook invoked each time this web component is connected from the document's DOM.
+        connectedCallback() {
+            // Create the initial element and its structure.
+            const stickyNavTemplate = document.createElement("template");
+            stickyNavTemplate.innerHTML = template;
+            const templateNode = document.importNode(stickyNavTemplate.content, true);
+
+            this.append(templateNode);
+
+            // Set the 'role' attribute on the <stick-nav/> for accessibility.
+            this.setAttribute('role', "navigation");
+
+            // For convenience, define the <ul> tag as the innerEl.
+            this.innerEl = this.querySelector("ul");
+
+            // Initialize the navbar at the state of its items.
+            this.drawNavItems();
+            this.updateActiveNavItem();
+            this.updateSticky();
+
+            // Set up observers.
+            this.observeMutations();
+            this.observeScrolling();
+            this.observeResizing();
+        }
+
+
+        // Lifecycle hook invoked each time this web component is disconnected from the document's DOM.
         disconnectedCallback() {
-
-            // Disconnect the mutionation observer.
-            this.observer.disconnect();
+            // Disconnect all observers.
+            this.mutationObserver.disconnect();
+            this.scrollEventListener.removeEventListener();
+            this.resizeEventListener.removeEventListener();
         }
     }
 
-    window.customElements.define("sticky-nav", StickyNavbar);
+    window.customElements.define("sticky-nav", StickyNav);
 }
 
-init();
+// Throttles the calls of the function provided.
+// Used for scroll events to reduce the expense.
+const throttle = (func, limit) => {
+    let inThrottle;
+
+    return function() {
+        const args = arguments;
+        const context = this;
+
+        if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    }
+}
+
+setTimeout(() => {
+    init();
+}, 0);

@@ -5,7 +5,8 @@
     "description": "Just drop it in to enable quick navigation to sections of your page.",
     "scripts": {
         "link": "sudo npm link",
-        "lint": "./node_modules/.bin/eslint **/*.js"
+        "lint": "./node_modules/.bin/eslint **/*.js",
+        "cypress:open": "npx cypress open"
     },
     "keywords": [
         "navigation",
@@ -35,6 +36,7 @@
     "module": "/src/index.js",
     "dependencies": {},
     "devDependencies": {
+        "cypress": "^6.8.0",
         "eslint": "^7.22.0",
         "eslint-config-bitovi": "^0.1.3",
         "eslint-plugin-import": "^2.22.1",
