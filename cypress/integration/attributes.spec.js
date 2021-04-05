@@ -10,6 +10,13 @@ context('Attributes - scrollable-container-selector', () => {
             .children()
             .should('have.length', 4)
     });
+
+    it('Should updated the URL fragment after scrolling to bottom section', () => {
+        cy.get('#scroll-to-test')
+            .scrollIntoView();
+
+        cy.window().location().hash().should('contain', '#scroll-to-test');
+    });
 });
 
 context('Attributes - heading-selector', () => {
@@ -35,6 +42,4 @@ context('Attributes - stick', () => {
         cy.get('sticky-nav')
             .should('not.have.class', 'sticky-nav-fixed');
     });
-
-
 });
