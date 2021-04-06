@@ -7,7 +7,7 @@
     "link": "sudo npm link",
     "lint": "eslint **/*.js",
     "cypress:open": "npx cypress open",
-    "preversion": "npm run lint && npm run cypress:open",
+    "preversion": "npm run lint && npm run cypress:run",
     "release:pre": "npm version prerelease && npm publish --tag=pre",
     "release:patch": "npm version patch && npm publish",
     "release:minor": "npm version minor && npm publish",
