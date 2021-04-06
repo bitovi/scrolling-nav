@@ -109,8 +109,6 @@ const init = () => {
             // For each of the nodes, add a click event that will scroll to that section heading.
             navbarItemNodes.forEach((navbarItemNode, idx) => {
                 navbarItemNode.addEventListener('click', () => {
-                    const { innerText: label, id } = sectionHeadings[idx];
-                    history.replaceState({}, label, `#${id}`);
                     sectionHeadings[idx].scrollIntoView();
                 });
             });
@@ -175,6 +173,9 @@ const init = () => {
                 this.querySelector(`li#sticky-nav-item-${activeNavItem.id}`)
                     .classList
                     .add("sticky-nav-active");
+
+                // Update the URL fragment to reflect the users current position on the page.
+                history.replaceState({}, activeNavItem.innerText, `#${activeNavItem.id}`);
 
                 // Keeps the active item scrolled to the far left.
                 const innerLeft = this.innerEl.offsetLeft;
