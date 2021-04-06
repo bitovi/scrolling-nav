@@ -62,7 +62,7 @@ files.forEach((file) => {
         it('Clicking a nav item should make it active', () => {
             cy.get('sticky-nav > ul > li')
                 .last()
-                .click()
+                .click({ force: true })
                 .should('have.class', 'sticky-nav-active');
         });
 
