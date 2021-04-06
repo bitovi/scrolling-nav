@@ -1,48 +1,52 @@
 {
-    "name": "@bitovi/sticky-nav",
-    "version": "0.0.11",
-    "private": false,
-    "description": "Just drop it in to enable quick navigation to sections of your page.",
-    "scripts": {
-        "link": "sudo npm link",
-        "lint": "./node_modules/.bin/eslint **/*.js",
-        "cypress:open": "npx cypress open"
-    },
-    "keywords": [
-        "navigation",
-        "header",
-        "nav",
-        "navbar",
-        "sticky",
-        "floating"
-    ],
-    "homepage": "https://github.com/bitovi/sticky-nav#readme",
-    "type": "module",
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/bitovi/sticky-nav.git"
-    },
-    "author": {
-        "name": "bitovi",
-        "email": "contact@bitovi.com",
-        "url": "http://bitovi.com"
-    },
-    "files": [
-        "/src/index.js",
-        "/src/template.js",
-        "/types/index.d.ts"
-    ],
-    "main": "/src/index.js",
-    "module": "/src/index.js",
-    "dependencies": {},
-    "devDependencies": {
-        "cypress": "^6.8.0",
-        "eslint": "^7.22.0",
-        "eslint-config-bitovi": "^0.1.3",
-        "eslint-plugin-import": "^2.22.1",
-        "eslint-plugin-node": "^11.1.0",
-        "eslint-plugin-promise": "^4.3.1"
-    },
-    "config": {},
-    "license": "MIT"
+  "name": "@bitovi/sticky-nav",
+  "version": "0.0.11-pre.1",
+  "private": false,
+  "description": "Just drop it in to enable quick navigation to sections of your page.",
+  "scripts": {
+    "link": "sudo npm link",
+    "lint": "eslint **/*.js",
+    "cypress:open": "npx cypress open",
+    "preversion": "npm run lint && npm run cypress:open",
+    "release:pre": "npm version prerelease && npm publish --tag=pre",
+    "release:patch": "npm version patch && npm publish",
+    "release:minor": "npm version minor && npm publish",
+    "release:major": "npm version major && npm publish"
+  },
+  "keywords": [
+    "navigation",
+    "header",
+    "nav",
+    "navbar",
+    "sticky",
+    "floating"
+  ],
+  "homepage": "https://github.com/bitovi/sticky-nav#readme",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bitovi/sticky-nav.git"
+  },
+  "author": "bitovi <contact@bitovi.com> (http://bitovi.com)",
+  "files": [
+    "/src/index.js",
+    "/src/template.js",
+    "/types/index.d.ts"
+  ],
+  "main": "/src/index.js",
+  "module": "/src/index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "cypress": "^6.8.0",
+    "eslint": "^7.22.0",
+    "eslint-config-bitovi": "^0.1.3",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.3.1"
+  },
+  "config": {},
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bitovi/sticky-nav/issues"
+  }
 }

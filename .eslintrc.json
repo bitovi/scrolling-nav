@@ -5,8 +5,8 @@
         "es2021": true
     },
     "extends": [
-        "bitovi",
-        "rules/eslint/open-source/on"
+        // "bitovi",
+        // "rules/eslint/open-source/on"
     ],
     "parserOptions": {
         "ecmaVersion": 12
