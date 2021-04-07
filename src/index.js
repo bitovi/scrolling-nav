@@ -125,7 +125,7 @@ const init = () => {
                     sectionHeadings[idx].scrollIntoView();
 
                     const { marginTop } = getComputedStyle(sectionHeadings[idx]);
-                    const scrollBack = window.scrollY - parseFloat(navHeight, 10) - parseFloat(marginTop, 10);
+                    const scrollBack = window.scrollY - parseFloat(navHeight, 10) - parseFloat(marginTop, 10) - this.stickyOffset;
                     window.scroll({ top: scrollBack, behavior: 'smooth' });
                 });
             });
@@ -190,7 +190,6 @@ const init = () => {
                     .add("sticky-nav-active");
 
                 // Update the URL fragment to reflect the users current position on the page.
-                // history.replaceState({}, activeNavItem.innerText, `#${activeNavItem.id}`);
                 history.replaceState({}, activeNavItem.innerText, `#${activeNavItem.prettyUrl}`);
 
                 // Keeps the active item scrolled to the far left.
@@ -355,9 +354,10 @@ const init = () => {
             // For convenience, define the <ul> tag as the innerEl.
             this.innerEl = this.querySelector("ul");
 
-            // Check for fixed headers and calculate sticky offset
+            // Get external fixed headers
             const fixedHeaders = document.querySelectorAll(this.topOffsetSelector);
 
+            // Calculate offset for sticky top positioning
             this.stickyOffset = Array.prototype.reduce.call(fixedHeaders, (acc, cur) => {
                 const { height, borderTop, borderBottom, marginTop, marginBottom } = getComputedStyle(cur);
                 const total =
