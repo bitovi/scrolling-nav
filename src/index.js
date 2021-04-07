@@ -29,9 +29,8 @@ const template = `
         }
 
         sticky-nav.sticky-nav-fixed {
-            position: fixed;
+            position: sticky;
             top: 0;
-            left: 0;
         }
         
         sticky-nav>ul {
@@ -48,7 +47,6 @@ const template = `
 
     <ul class='sticky-nav-inner'></ul>
 `;
-
 
 const init = () => {
     class StickyNav extends HTMLElement {
@@ -68,7 +66,12 @@ const init = () => {
             // The 'stick' property references the 'stick' attribute optionally defined by the user.
             // This attribute determines whether or not have the navbar to 'stick' as the user scrolls ...
             // down the page. If not provided, it will fallback on true.
-            this.stick = this.getAttribute('stick') === 'true';
+            this.stick = this.getAttribute('stick') === 'false' ? false : true;
+
+            // Provides a selector that is used on fixed elements (ex. a main header) that is displayed above
+            // the sticky-scrolly-nav. The sticky position top value is calculated based on the total height
+            // of all elements containing this selector
+            this.topOffsetSelector = this.getAttribute('top-offset-selector');
         }
 
         // Draw all the section headings as items in the nav.
@@ -81,13 +84,15 @@ const init = () => {
             const navbarItemsTemplate = document.createElement("template");
             const sectionHeadings = this.getSectionHeadings();
 
-            let navbarItems = "";
+            let navbarItems = '';
 
             // Go through each of the section headings and create navbar items.
             sectionHeadings.forEach((el, idx) => {
                 const { innerText } = el;
 
                 let id = el.id;
+
+                let prettyUrl = this.createPrettyUrl(innerText);
 
                 // If this section heading does not have an ID, create one for it.
                 if (!id) {
@@ -96,7 +101,7 @@ const init = () => {
                 }
 
                 // Concat this navbar item into the navbarItems string.
-                navbarItems += `<li class="sticky-nav-item" id="sticky-nav-item-${id}">
+                navbarItems += `<li class="sticky-nav-item" id="sticky-nav-item-${id}" data-pretty-url=${prettyUrl}>
                     <a>${innerText}</a>
                 </li>`;
             });
@@ -104,12 +109,24 @@ const init = () => {
             navbarItemsTemplate.innerHTML = navbarItems;
 
             this.innerEl.replaceChildren(navbarItemsTemplate.content.cloneNode(true));
+
+            // Get height of sticky nav element
+            const { height } = getComputedStyle(this.querySelector('.sticky-nav-inner'));
+            const navHeight = parseFloat(height, 10);// + parseFloat(marginTop, 0) + parseFloat(marginBottom, 0);
+
+            // Adjust sticky position
+            this.style.top = `${this.stickyOffset}px`;
+
             const navbarItemNodes = this.querySelectorAll('li');
 
             // For each of the nodes, add a click event that will scroll to that section heading.
             navbarItemNodes.forEach((navbarItemNode, idx) => {
                 navbarItemNode.addEventListener('click', () => {
                     sectionHeadings[idx].scrollIntoView();
+
+                    const { marginTop } = getComputedStyle(sectionHeadings[idx]);
+                    const scrollBack = window.scrollY - parseFloat(navHeight, 10) - parseFloat(marginTop, 10);
+                    window.scroll({ top: scrollBack, behavior: 'smooth' });
                 });
             });
 
@@ -164,9 +181,7 @@ const init = () => {
                 // Remove the active class from the previously selected nav item. 
                 this.querySelectorAll("li.sticky-nav-active")
                     .forEach(node => {
-                        node
-                            .classList
-                            .remove("sticky-nav-active");
+                        node.classList.remove("sticky-nav-active");
                     });
 
                 // Add the active class to the currently selected nav item.
@@ -175,7 +190,8 @@ const init = () => {
                     .add("sticky-nav-active");
 
                 // Update the URL fragment to reflect the users current position on the page.
-                history.replaceState({}, activeNavItem.innerText, `#${activeNavItem.id}`);
+                // history.replaceState({}, activeNavItem.innerText, `#${activeNavItem.id}`);
+                history.replaceState({}, activeNavItem.innerText, `#${activeNavItem.prettyUrl}`);
 
                 // Keeps the active item scrolled to the far left.
                 const innerLeft = this.innerEl.offsetLeft;
@@ -189,17 +205,23 @@ const init = () => {
 
         // Adds a 'sticky-nav-fixed' class to the <sticky-nav> component if user has scrolls passed it + it is enabled by consumer.
         updateSticky() {
-            if (this.stick) {
+            // if (this.stick) {
 
-                const scrollableContainer = this.getScrollableContainer();
-                const menuPosY = this.offsetHeight;
+            //     const scrollableContainer = this.getScrollableContainer();
+            //     const menuPosY = this.offsetHeight;
 
-                if (scrollableContainer.scrollY >= menuPosY + this.height) {
-                    this.classList.add("sticky-nav-fixed");
-                } else {
-                    this.classList.remove("sticky-nav-fixed");
-                }
-            }
+            //     // console.log({
+            //     //     container: scrollableContainer.scrollY,
+            //     //     menu: menuPosY,
+            //     //     height: this.height || 0
+            //     // });
+
+            //     if (scrollableContainer.scrollY >= menuPosY + (this.height || 0)) {
+            //         this.classList.add("sticky-nav-fixed");
+            //     } else {
+            //         this.classList.remove("sticky-nav-fixed");
+            //     }
+            // }
         }
 
         // Watches for changes using the mutationObserver and updates everything if anything changes.
@@ -295,7 +317,7 @@ const init = () => {
 
             // For each of the section headings, determine its position. 
             this.getSectionHeadings().forEach((sectionHeadingNode, idx) => {
-                let { offsetTop, id } = sectionHeadingNode;
+                let { offsetTop, id, innerText } = sectionHeadingNode;
 
                 if (!id) {
                     id = `sticky-nav-el-${idx}`;
@@ -305,6 +327,7 @@ const init = () => {
                 headingPositions.push({
                     startY: offsetTop - this.getScrollableContainer().innerHeight / 3,
                     id,
+                    prettyUrl: this.createPrettyUrl(innerText)
                 });
             });
 
@@ -321,11 +344,30 @@ const init = () => {
 
             this.append(templateNode);
 
+            // Sets sticky class
+            if (this.stick) {
+                this.classList.add('sticky-nav-fixed');
+            }
+
             // Set the 'role' attribute on the <stick-nav/> for accessibility.
             this.setAttribute('role', "navigation");
 
             // For convenience, define the <ul> tag as the innerEl.
             this.innerEl = this.querySelector("ul");
+
+            // Check for fixed headers and calculate sticky offset
+            const fixedHeaders = document.querySelectorAll(this.topOffsetSelector);
+
+            this.stickyOffset = Array.prototype.reduce.call(fixedHeaders, (acc, cur) => {
+                const { height, borderTop, borderBottom, marginTop, marginBottom } = getComputedStyle(cur);
+                const total =
+                    parseFloat(height, 10)
+                    + parseFloat(borderTop, 10)
+                    + parseFloat(borderBottom, 10)
+                    + parseFloat(marginTop, 10)
+                    + parseFloat(marginBottom, 10);
+                return acc += total;
+            }, 0);
 
             // Initialize the navbar at the state of its items.
             this.drawNavItems();
@@ -338,13 +380,16 @@ const init = () => {
             this.observeResizing();
         }
 
-
         // Lifecycle hook invoked each time this web component is disconnected from the document's DOM.
         disconnectedCallback() {
             // Disconnect all observers.
             this.mutationObserver.disconnect();
             this.scrollEventListener.removeEventListener();
             this.resizeEventListener.removeEventListener();
+        }
+
+        createPrettyUrl(str = '') {
+            return str.toLowerCase().split(' ').join('-').replace('&', 'and');
         }
     }
 
