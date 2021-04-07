@@ -68,8 +68,8 @@ const init = () => {
             // down the page. If not provided, it will fallback on true.
             this.stick = this.getAttribute('stick') === 'false' ? false : true;
 
-            // Provides a selector that is used on fixed elements (ex. a main header) that is displayed above
-            // the sticky-scrolly-nav. The sticky position top value is calculated based on the total height
+            // Provides a selector that is used on fixed elements (ex. an external main header) that is displayed
+            // above the sticky-scrolly-nav. The sticky position top value is calculated based on the total height
             // of all elements containing this selector
             this.topOffsetSelector = this.getAttribute('top-offset-selector');
         }
@@ -127,6 +127,14 @@ const init = () => {
                     const { marginTop } = getComputedStyle(sectionHeadings[idx]);
                     const scrollBack = window.scrollY - parseFloat(navHeight, 10) - parseFloat(marginTop, 10) - this.stickyOffset;
                     window.scroll({ top: scrollBack, behavior: 'smooth' });
+
+                    this.updateActiveNavItem();
+
+                    // disable scroll updates while auto-scrolling
+                    this.waitToUpdate = true;
+                    setTimeout(() => {
+                        this.waitToUpdate = false;
+                    }, 1000);
                 });
             });
 
@@ -241,8 +249,10 @@ const init = () => {
         // Watches the scroll and updates what is active + if the <sticky-nav> should be sticky or not.
         observeScrolling() {
             this.scrollEventListener = this.getScrollableContainer().node.addEventListener("scroll", throttle(() => {
-                this.updateActiveNavItem();
-                this.updateSticky();
+                if (!this.waitToUpdate) {
+                    this.updateActiveNavItem();
+                    this.updateSticky();
+                }
             }, 100));
         }
 
