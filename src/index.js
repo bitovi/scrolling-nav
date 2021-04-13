@@ -17,27 +17,23 @@
 // The navbar items are then injected into the <ul> tags found in this template.
 const template = `
     <style>
-        sticky-nav::-webkit-scrollbar {
+        scrolling-nav::-webkit-scrollbar {
             display: none;
         }
         
-        sticky-nav {
+        scrolling-nav {
             overflow-x: scroll;
             overflow-y: hidden;
-            width: 100%;
             display: block;
-        }
-
-        sticky-nav.sticky-nav-fixed {
-            position: sticky;
-            top: 0;
+            width: 100%;
+            box-sizing: border-box;
         }
         
-        sticky-nav>ul {
+        scrolling-nav > ul {
             display: -webkit-box;
         }
         
-        sticky-nav>ul>li {
+        scrolling-nav>ul>li {
             display: block;
             float: left;
             cursor: pointer;
@@ -45,11 +41,11 @@ const template = `
         }
     </style>
 
-    <ul class='sticky-nav-inner'></ul>
+    <ul class='scrolling-nav-inner'></ul>
 `;
 
 const init = () => {
-    class StickyNav extends HTMLElement {
+    class ScrollingNav extends HTMLElement {
         constructor() {
             super();
 
@@ -62,16 +58,6 @@ const init = () => {
             // This attribute determines what elements are used as 'headings' which be used to populate the navbar.
             // If not provided, it will fallback on a H2 tag.
             this.headingSelector = this.getAttribute('heading-selector') || 'h2';
-
-            // The 'stick' property references the 'stick' attribute optionally defined by the user.
-            // This attribute determines whether or not have the navbar to 'stick' as the user scrolls ...
-            // down the page. If not provided, it will fallback on true.
-            this.stick = this.getAttribute('stick') === 'false' ? false : true;
-
-            // Provides a selector that is used on fixed elements (ex. an external main header) that is displayed
-            // above the sticky-scrolly-nav. The sticky position top value is calculated based on the total height
-            // of all elements containing this selector
-            this.topOffsetSelector = this.getAttribute('top-offset-selector');
         }
 
         // Draw all the section headings as items in the nav.
@@ -96,12 +82,12 @@ const init = () => {
 
                 // If this section heading does not have an ID, create one for it.
                 if (!id) {
-                    id = `sticky-nav-el-${idx}`;
+                    id = `scrolling-nav-el-${idx}`;
                     el.id = id;
                 }
 
                 // Concat this navbar item into the navbarItems string.
-                navbarItems += `<li class="sticky-nav-item" id="sticky-nav-item-${id}" data-pretty-url=${prettyUrl}>
+                navbarItems += `<li class="scrolling-nav-item" id="scrolling-nav-item-${id}" data-pretty-url=${prettyUrl}>
                     <a>${innerText}</a>
                 </li>`;
             });
@@ -110,31 +96,26 @@ const init = () => {
 
             this.innerEl.replaceChildren(navbarItemsTemplate.content.cloneNode(true));
 
-            // Get height of sticky nav element
-            const { height } = getComputedStyle(this.querySelector('.sticky-nav-inner'));
-            const navHeight = parseFloat(height, 10);// + parseFloat(marginTop, 0) + parseFloat(marginBottom, 0);
-
-            // Adjust sticky position
-            this.style.top = `${this.stickyOffset}px`;
-
             const navbarItemNodes = this.querySelectorAll('li');
 
             // For each of the nodes, add a click event that will scroll to that section heading.
             navbarItemNodes.forEach((navbarItemNode, idx) => {
                 navbarItemNode.addEventListener('click', () => {
-                    sectionHeadings[idx].scrollIntoView();
 
-                    const { marginTop } = getComputedStyle(sectionHeadings[idx]);
-                    const scrollBack = window.scrollY - parseFloat(navHeight, 10) - parseFloat(marginTop, 10) - this.stickyOffset;
-                    window.scroll({ top: scrollBack, behavior: 'smooth' });
+                    // Scroll to heading so it is fully visible below navbar
+                    const navBottom = this.getBoundingClientRect().bottom;
+                    const sectionBottom = sectionHeadings[idx].offsetTop;
+                    const sectionHeight = sectionHeadings[idx].clientHeight;
+                    window.scroll({ top: sectionBottom - sectionHeight - navBottom });
 
-                    this.updateActiveNavItem();
+                    sectionHeadings.forEach((el, i) => {
+                        if (i === idx) {
+                            el.classList.add('scrolling-nav-active');
+                        } else {
+                            el.classList.remove('scrolling-nav-active');
+                        }
+                    });
 
-                    // disable scroll updates while auto-scrolling
-                    this.waitToUpdate = true;
-                    setTimeout(() => {
-                        this.waitToUpdate = false;
-                    }, 1000);
                 });
             });
 
@@ -187,48 +168,24 @@ const init = () => {
             // Only update if we need to; kind of expensive to do.
             if (activeNavItem.id !== this.activeHeaderId && this.getSectionHeadings().length > 0) {
                 // Remove the active class from the previously selected nav item. 
-                this.querySelectorAll("li.sticky-nav-active")
-                    .forEach(node => {
-                        node.classList.remove("sticky-nav-active");
-                    });
+                this.querySelectorAll("li.scrolling-nav-active")
+                    .forEach(node => node.classList.remove("scrolling-nav-active"));
 
                 // Add the active class to the currently selected nav item.
-                this.querySelector(`li#sticky-nav-item-${activeNavItem.id}`)
-                    .classList
-                    .add("sticky-nav-active");
+                this.querySelector(`li#scrolling-nav-item-${activeNavItem.id}`)
+                    .classList.add("scrolling-nav-active");
 
                 // Update the URL fragment to reflect the users current position on the page.
                 history.replaceState({}, activeNavItem.innerText, `#${activeNavItem.prettyUrl}`);
 
                 // Keeps the active item scrolled to the far left.
                 const innerLeft = this.innerEl.offsetLeft;
-                const activeLeft = this.querySelector(`ul>li#sticky-nav-item-${activeNavItem.id}`).offsetLeft;
+                const activeLeft = this.querySelector(`ul>li#scrolling-nav-item-${activeNavItem.id}`).offsetLeft;
                 this.scrollLeft = activeLeft - innerLeft;
 
                 // Set a property to determine whether or not to re-render in the future.
                 this.activeHeaderId = activeNavItem.id;
             }
-        }
-
-        // Adds a 'sticky-nav-fixed' class to the <sticky-nav> component if user has scrolls passed it + it is enabled by consumer.
-        updateSticky() {
-            // if (this.stick) {
-
-            //     const scrollableContainer = this.getScrollableContainer();
-            //     const menuPosY = this.offsetHeight;
-
-            //     // console.log({
-            //     //     container: scrollableContainer.scrollY,
-            //     //     menu: menuPosY,
-            //     //     height: this.height || 0
-            //     // });
-
-            //     if (scrollableContainer.scrollY >= menuPosY + (this.height || 0)) {
-            //         this.classList.add("sticky-nav-fixed");
-            //     } else {
-            //         this.classList.remove("sticky-nav-fixed");
-            //     }
-            // }
         }
 
         // Watches for changes using the mutationObserver and updates everything if anything changes.
@@ -239,7 +196,6 @@ const init = () => {
             const callback = () => {
                 this.drawNavItems();
                 this.updateActiveNavItem();
-                this.updateSticky();
             };
 
             this.mutationObserver = new MutationObserver(callback);
@@ -249,10 +205,7 @@ const init = () => {
         // Watches the scroll and updates what is active + if the <sticky-nav> should be sticky or not.
         observeScrolling() {
             this.scrollEventListener = this.getScrollableContainer().node.addEventListener("scroll", throttle(() => {
-                if (!this.waitToUpdate) {
-                    this.updateActiveNavItem();
-                    this.updateSticky();
-                }
+                this.updateActiveNavItem();
             }, 100));
         }
 
@@ -261,7 +214,6 @@ const init = () => {
             this.resizeEventListener = this.getScrollableContainer().node.addEventListener("resize", () => {
                 if (this.nodesAreSame(this.currentNodeArr, this.getSectionHeadings())) {
                     this.updateActiveNavItem();
-                    this.updateSticky();
                 }
             });
         }
@@ -329,7 +281,7 @@ const init = () => {
                 let { offsetTop, id, innerText } = sectionHeadingNode;
 
                 if (!id) {
-                    id = `sticky-nav-el-${idx}`;
+                    id = `scrolling-nav-el-${idx}`;
                     sectionHeadingNode.id = id;
                 }
 
@@ -355,7 +307,7 @@ const init = () => {
 
             // Sets sticky class
             if (this.stick) {
-                this.classList.add('sticky-nav-fixed');
+                this.classList.add('scrolling-nav-fixed');
             }
 
             // Set the 'role' attribute on the <stick-nav/> for accessibility.
@@ -364,25 +316,9 @@ const init = () => {
             // For convenience, define the <ul> tag as the innerEl.
             this.innerEl = this.querySelector("ul");
 
-            // Get external fixed headers
-            const fixedHeaders = document.querySelectorAll(this.topOffsetSelector);
-
-            // Calculate offset for sticky top positioning
-            this.stickyOffset = Array.prototype.reduce.call(fixedHeaders, (acc, cur) => {
-                const { height, borderTop, borderBottom, marginTop, marginBottom } = getComputedStyle(cur);
-                const total =
-                    parseFloat(height, 10)
-                    + parseFloat(borderTop, 10)
-                    + parseFloat(borderBottom, 10)
-                    + parseFloat(marginTop, 10)
-                    + parseFloat(marginBottom, 10);
-                return acc += total;
-            }, 0);
-
             // Initialize the navbar at the state of its items.
             this.drawNavItems();
             this.updateActiveNavItem();
-            this.updateSticky();
 
             // Set up observers.
             this.observeMutations();
@@ -403,7 +339,7 @@ const init = () => {
         }
     }
 
-    window.customElements.define("sticky-nav", StickyNav);
+    window.customElements.define("scrolling-nav", ScrollingNav);
 }
 
 // Throttles the calls of the function provided.
