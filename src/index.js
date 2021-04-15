@@ -73,21 +73,21 @@ const init = () => {
             let navbarItems = '';
 
             // Go through each of the section headings and create navbar items.
-            sectionHeadings.forEach((el, idx) => {
+            sectionHeadings.forEach(el => {
                 const { innerText } = el;
 
                 let id = el.id;
 
-                let prettyUrl = this.createPrettyUrl(innerText);
+                let urlHash = this.createUrlHash(innerText);
 
                 // If this section heading does not have an ID, create one for it.
                 if (!id) {
-                    id = `scrolling-nav-el-${idx}`;
+                    id = urlHash;
                     el.id = id;
                 }
 
                 // Concat this navbar item into the navbarItems string.
-                navbarItems += `<li class="scrolling-nav-item" id="scrolling-nav-item-${id}" data-pretty-url=${prettyUrl}>
+                navbarItems += `<li class="scrolling-nav-item" id="scrolling-nav-item-${id}">
                     <a>${innerText}</a>
                 </li>`;
             });
@@ -102,11 +102,7 @@ const init = () => {
             navbarItemNodes.forEach((navbarItemNode, idx) => {
                 navbarItemNode.addEventListener('click', () => {
 
-                    // Scroll to heading so it is fully visible below navbar
-                    const navBottom = this.getBoundingClientRect().bottom;
-                    const sectionBottom = sectionHeadings[idx].offsetTop;
-                    const sectionHeight = sectionHeadings[idx].clientHeight;
-                    window.scroll({ top: sectionBottom - sectionHeight - navBottom });
+                    this.scrollToSection(sectionHeadings[idx]);
 
                     sectionHeadings.forEach((el, i) => {
                         if (i === idx) {
@@ -176,7 +172,7 @@ const init = () => {
                     .classList.add("scrolling-nav-active");
 
                 // Update the URL fragment to reflect the users current position on the page.
-                history.replaceState({}, activeNavItem.innerText, `#${activeNavItem.prettyUrl}`);
+                history.replaceState({}, activeNavItem.innerText, `#${activeNavItem.id}`);
 
                 // Keeps the active item scrolled to the far left.
                 const innerLeft = this.innerEl.offsetLeft;
@@ -273,26 +269,24 @@ const init = () => {
         }
 
         // Get the headings and positions of all the section headings.
+        // Use the existing ID or generate one that will show in the url
         getSectionHeadingsWithPositions() {
             let headingPositions = [];
 
-            // For each of the section headings, determine its position. 
-            this.getSectionHeadings().forEach((sectionHeadingNode, idx) => {
-                let { offsetTop, id, innerText } = sectionHeadingNode;
+            this.getSectionHeadings().forEach(sectionHeadingNode => {
+                let { id, offsetTop, innerText } = sectionHeadingNode;
 
                 if (!id) {
-                    id = `scrolling-nav-el-${idx}`;
+                    id = this.createUrlHash(innerText);
                     sectionHeadingNode.id = id;
                 }
 
                 headingPositions.push({
                     startY: offsetTop - this.getScrollableContainer().innerHeight / 3,
-                    id,
-                    prettyUrl: this.createPrettyUrl(innerText)
+                    id
                 });
             });
 
-            // Return the section headings hydrated with their position data.
             return headingPositions;
         }
 
@@ -304,11 +298,6 @@ const init = () => {
             const templateNode = document.importNode(stickyNavTemplate.content, true);
 
             this.append(templateNode);
-
-            // Sets sticky class
-            if (this.stick) {
-                this.classList.add('scrolling-nav-fixed');
-            }
 
             // Set the 'role' attribute on the <stick-nav/> for accessibility.
             this.setAttribute('role', "navigation");
@@ -334,7 +323,16 @@ const init = () => {
             this.resizeEventListener.removeEventListener();
         }
 
-        createPrettyUrl(str = '') {
+        // Scroll to heading so it is fully visible below navbar
+        scrollToSection(sectionHeading) {
+            const navBottom = this.getBoundingClientRect().bottom;
+            const sectionBottom = sectionHeading.offsetTop;
+            const sectionHeight = sectionHeading.clientHeight;
+            window.scroll({ top: sectionBottom - sectionHeight - navBottom });
+        }
+
+        // Generate url hash shown in the url and used to identify sections 
+        createUrlHash(str = '') {
             return str.toLowerCase().split(' ').join('-').replace('&', 'and');
         }
     }
