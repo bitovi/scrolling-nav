@@ -77,7 +77,7 @@ const init = () => {
             // Set innerEl (main ul element containing nav items) to correspond to the section headings
             this.innerEl.innerHTML = Array.prototype.reduce.call(sectionHeadings, (html, element) => {
                 let { id, innerText } = element;
-                let urlHash = this.createUrlHash(innerText);
+                const urlHash = this.createUrlHash(innerText);
 
                 if (!id) {
                     element.id = id = urlHash;
