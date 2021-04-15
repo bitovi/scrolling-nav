@@ -87,9 +87,10 @@ const init = () => {
                 }
 
                 // Concat this navbar item into the navbarItems string.
-                navbarItems += `<li class="scrolling-nav-item" id="scrolling-nav-item-${id}">
-                    <a>${innerText}</a>
-                </li>`;
+                navbarItems +=
+                    `<li class="scrolling-nav-item" id="scrolling-nav-item-${id}">
+                        <a>${innerText}</a>
+                    </li>`;
             });
 
             navbarItemsTemplate.innerHTML = navbarItems;
@@ -286,6 +287,12 @@ const init = () => {
 
         // Lifecycle hook invoked each time this web component is connected from the document's DOM.
         connectedCallback() {
+
+            const { hash } = location;
+            if (hash) {
+                console.log('initial hash', hash.substring(1));
+            }
+
             // Create the initial element and its structure.
             const stickyNavTemplate = document.createElement("template");
             stickyNavTemplate.innerHTML = template;
