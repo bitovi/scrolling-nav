@@ -281,7 +281,6 @@ const init = () => {
 
         // Lifecycle hook invoked each time this web component is connected from the document's DOM.
         connectedCallback() {
-
             // Create the initial element and its structure.
             const stickyNavTemplate = document.createElement('template');
             stickyNavTemplate.innerHTML = template;
