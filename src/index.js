@@ -122,13 +122,12 @@ const init = () => {
         // Updates what item in the navbar is currently 'active' 
         updateActiveNavItem() {
             const headingPositions = this.getSectionHeadingsWithPositions();
-            let activeNavItem = headingPositions[0] || {};
-            let updatedActiveItem = {};
             const scrollableContainer = this.getScrollableContainer();
+            let activeHeadingSection;
 
             // If the user has not scrolled down far enough, we know they are still on the first item.
             if (headingPositions.length === 0 || scrollableContainer.scrollY <= headingPositions[0].startY) {
-                updatedActiveItem = headingPositions[0];
+                activeHeadingSection = headingPositions[0];
             } else {
                 // Find out what navbar item is currently active by comparing the scroll position to the ... 
                 // position of the current and next section heading.
@@ -137,7 +136,7 @@ const init = () => {
 
                     if (i === headingPositions.length - 1) {
                         // If the user is at the last item, so we know that it has to be active.
-                        updatedActiveItem = currentHeadingPosition;
+                        activeHeadingSection = currentHeadingPosition;
                     } else {
                         // The user is looking at a section heading before the last and after the first.
                         const next = headingPositions[i + 1];
@@ -148,39 +147,34 @@ const init = () => {
                             scrollableContainer.scrollY >= currentHeadingPosition.startY &&
                             scrollableContainer.scrollY < next.startY
                         ) {
-                            updatedActiveItem = currentHeadingPosition;
+                            activeHeadingSection = currentHeadingPosition;
                             break;
                         }
                     }
                 }
             }
 
-            // Verify that the updatedActiveItem has been set; otherwise use the current/default activeNavItem.
-            if (updatedActiveItem && updatedActiveItem.id) {
-                activeNavItem = updatedActiveItem;
-            }
-
             // Check if the the activeNavItem has changed since the last time we updated the active classes on the nav items.
             // Only update if we need to; kind of expensive to do.
-            if (activeNavItem.id !== this.activeHeaderId && this.getSectionHeadings().length > 0) {
+            if (activeHeadingSection.id !== this.activeHeaderId && this.getSectionHeadings().length) {
                 // Remove the active class from the previously selected nav item. 
                 this.querySelectorAll("li.scrolling-nav-active")
                     .forEach(node => node.classList.remove("scrolling-nav-active"));
 
                 // Add the active class to the currently selected nav item.
-                this.querySelector(`li#scrolling-nav-item-${activeNavItem.id}`)
+                this.querySelector(`li#scrolling-nav-item-${activeHeadingSection.id}`)
                     .classList.add("scrolling-nav-active");
 
                 // Update the URL fragment to reflect the users current position on the page.
-                history.replaceState({}, activeNavItem.innerText, `#${activeNavItem.id}`);
+                history.replaceState({}, activeHeadingSection.innerText, `#${activeHeadingSection.id}`);
 
                 // Keeps the active item scrolled to the far left.
                 const innerLeft = this.innerEl.offsetLeft;
-                const activeLeft = this.querySelector(`ul>li#scrolling-nav-item-${activeNavItem.id}`).offsetLeft;
+                const activeLeft = this.querySelector(`ul>li#scrolling-nav-item-${activeHeadingSection.id}`).offsetLeft;
                 this.scrollLeft = activeLeft - innerLeft;
 
                 // Set a property to determine whether or not to re-render in the future.
-                this.activeHeaderId = activeNavItem.id;
+                this.activeHeaderId = activeHeadingSection.id;
             }
         }
 
