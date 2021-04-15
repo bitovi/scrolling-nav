@@ -14,9 +14,10 @@ const sections = [
 const containerEl = document.createElement('article');
 document.body.appendChild(containerEl);
 
-sections.forEach(food => {
+sections.forEach((food, index) => {
     const heading = document.createElement('h2');
     heading.textContent = food;
+    if (index === 3) heading.id = 'custom-id';
     heading.style.marginLeft = '1em';
     containerEl.appendChild(heading);
 

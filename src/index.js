@@ -74,51 +74,26 @@ const init = () => {
                 return;
             }
 
-            const navbarItemsTemplate = document.createElement("template");
-
-            let navbarItems = '';
-
-            // Go through each of the section headings and create navbar items.
-            sectionHeadings.forEach(el => {
-                const { innerText } = el;
-
-                let id = el.id;
-
+            // Set innerEl (main ul element containing nav items) to correspond to the section headings
+            this.innerEl.innerHTML = Array.prototype.reduce.call(sectionHeadings, (html, element) => {
+                let { id, innerText } = element;
                 let urlHash = this.createUrlHash(innerText);
 
-                // If this section heading does not have an ID, create one for it.
                 if (!id) {
-                    id = urlHash;
-                    el.id = id;
+                    element.id = id = urlHash;
                 }
 
-                // Concat this navbar item into the navbarItems string.
-                navbarItems +=
+                return html +=
                     `<li class="scrolling-nav-item" id="scrolling-nav-item-${id}">
                         <a>${innerText}</a>
                     </li>`;
-            });
-
-            navbarItemsTemplate.innerHTML = navbarItems;
-
-            this.innerEl.replaceChildren(navbarItemsTemplate.content.cloneNode(true));
-
-            const navbarItemNodes = this.querySelectorAll('li');
+            }, '');
 
             // For each of the nodes, add a click event that will scroll to that section heading.
-            navbarItemNodes.forEach((navbarItemNode, idx) => {
+            this.querySelectorAll('li').forEach((navbarItemNode, idx) => {
                 navbarItemNode.addEventListener('click', () => {
-
                     this.scrollToSection(sectionHeadings[idx]);
-
-                    sectionHeadings.forEach((el, i) => {
-                        if (i === idx) {
-                            el.classList.add('scrolling-nav-active');
-                        } else {
-                            el.classList.remove('scrolling-nav-active');
-                        }
-                    });
-
+                    this.updateActiveNavItem();
                 });
             });
 
@@ -126,8 +101,9 @@ const init = () => {
             this.currentNodeArr = this.getSectionHeadings();
         }
 
-        // Updates what item in the navbar is currently 'active' 
-        updateActiveNavItem() {
+        // Updates what item in the navbar is currently 'active'
+        // Takes optional initialHash to scroll to specific section on load
+        updateActiveNavItem(initialHash) {
             const headingPositions = this.getSectionHeadingsWithPositions();
             const scrollableContainer = this.getScrollableContainer();
             let activeHeadingSection;
@@ -135,6 +111,13 @@ const init = () => {
             if (!headingPositions || !headingPositions.length) {
                 console.log('No items for <scrolling-nav>');
                 return;
+            }
+
+            if (initialHash) {
+                const section = document.querySelector(initialHash);
+                if (section) {
+                    this.scrollToSection(section);
+                }
             }
 
             // If the user has not scrolled down far enough, we know they are still on the first item.
@@ -170,12 +153,12 @@ const init = () => {
             // Only update if we need to; kind of expensive to do.
             if (activeHeadingSection.id !== this.activeHeaderId && this.getSectionHeadings().length) {
                 // Remove the active class from the previously selected nav item. 
-                this.querySelectorAll("li.scrolling-nav-active")
-                    .forEach(node => node.classList.remove("scrolling-nav-active"));
+                this.querySelectorAll('li.scrolling-nav-active')
+                    .forEach(node => node.classList.remove('scrolling-nav-active'));
 
                 // Add the active class to the currently selected nav item.
                 this.querySelector(`li#scrolling-nav-item-${activeHeadingSection.id}`)
-                    .classList.add("scrolling-nav-active");
+                    .classList.add('scrolling-nav-active');
 
                 // Update the URL fragment to reflect the users current position on the page.
                 history.replaceState({}, activeHeadingSection.innerText, `#${activeHeadingSection.id}`);
@@ -206,14 +189,14 @@ const init = () => {
 
         // Watches the scroll and updates what is active + if the <sticky-nav> should be sticky or not.
         observeScrolling() {
-            this.scrollEventListener = this.getScrollableContainer().node.addEventListener("scroll", throttle(() => {
+            this.scrollEventListener = this.getScrollableContainer().node.addEventListener('scroll', throttle(() => {
                 this.updateActiveNavItem();
             }, 100));
         }
 
         // Watches the resiving and updates what is active + if the <sticky-nav> should be sticky or not.
         observeResizing() {
-            this.resizeEventListener = this.getScrollableContainer().node.addEventListener("resize", () => {
+            this.resizeEventListener = this.getScrollableContainer().node.addEventListener('resize', () => {
                 if (this.nodesAreSame(this.currentNodeArr, this.getSectionHeadings())) {
                     this.updateActiveNavItem();
                 }
@@ -299,27 +282,24 @@ const init = () => {
         // Lifecycle hook invoked each time this web component is connected from the document's DOM.
         connectedCallback() {
 
-            const { hash } = location;
-            if (hash) {
-                console.log('initial hash', hash.substring(1));
-            }
-
             // Create the initial element and its structure.
-            const stickyNavTemplate = document.createElement("template");
+            const stickyNavTemplate = document.createElement('template');
             stickyNavTemplate.innerHTML = template;
             const templateNode = document.importNode(stickyNavTemplate.content, true);
-
             this.append(templateNode);
 
             // Set the 'role' attribute on the <stick-nav/> for accessibility.
-            this.setAttribute('role', "navigation");
+            this.setAttribute('role', 'navigation');
 
             // For convenience, define the <ul> tag as the innerEl.
-            this.innerEl = this.querySelector("ul");
+            this.innerEl = this.querySelector('ul');
+
+            // Check for initial url hash to adjust initial scroll position
+            const initialHash = location.hash;
 
             // Initialize the navbar at the state of its items.
             this.drawNavItems();
-            this.updateActiveNavItem();
+            this.updateActiveNavItem(initialHash);
 
             // Set up observers.
             this.observeMutations();
@@ -349,7 +329,7 @@ const init = () => {
         }
     }
 
-    window.customElements.define("scrolling-nav", ScrollingNav);
+    window.customElements.define('scrolling-nav', ScrollingNav);
 }
 
 // Throttles the calls of the function provided.
