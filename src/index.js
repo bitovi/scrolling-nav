@@ -62,13 +62,19 @@ const init = () => {
 
         // Draw all the section headings as items in the nav.
         drawNavItems() {
+            const sectionHeadings = this.getSectionHeadings();
+
+            if (!sectionHeadings || !sectionHeadings.length) {
+                console.log('No items for <scrolling-nav>');
+                return;
+            }
+
             // Check if there were any section headings that changed before redrawing.
-            if (this.nodesAreSame(this.currentNodeArr, this.getSectionHeadings())) {
+            if (this.nodesAreSame(this.currentNodeArr, sectionHeadings)) {
                 return;
             }
 
             const navbarItemsTemplate = document.createElement("template");
-            const sectionHeadings = this.getSectionHeadings();
 
             let navbarItems = '';
 
@@ -126,8 +132,13 @@ const init = () => {
             const scrollableContainer = this.getScrollableContainer();
             let activeHeadingSection;
 
+            if (!headingPositions || !headingPositions.length) {
+                console.log('No items for <scrolling-nav>');
+                return;
+            }
+
             // If the user has not scrolled down far enough, we know they are still on the first item.
-            if (headingPositions.length === 0 || scrollableContainer.scrollY <= headingPositions[0].startY) {
+            if (scrollableContainer.scrollY <= headingPositions[0].startY) {
                 activeHeadingSection = headingPositions[0];
             } else {
                 // Find out what navbar item is currently active by comparing the scroll position to the ... 
