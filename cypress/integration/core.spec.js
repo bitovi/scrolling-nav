@@ -1,20 +1,17 @@
 /// <reference types="cypress" />
 
-const files = [{
+const files = [
+    {
         path: 'cypress/html/index.html',
         name: "Attributes: none"
     },
     {
-        path: 'cypress/html/attributes/scrollable-container-selector.html',
+        path: 'cypress/html/scrollable-container-selector.html',
         name: 'Attributes: scrollable-container-selector'
     },
     {
-        path: 'cypress/html/attributes/heading-selector.html',
+        path: 'cypress/html/heading-selector.html',
         name: 'Attributes: heading-selector'
-    },
-    {
-        path: 'cypress/html/attributes/stick.html',
-        name: 'Attributes: stick'
     }
 ];
 
@@ -24,34 +21,34 @@ files.forEach((file) => {
             cy.visit(file.path)
         })
 
-        it('<sticky-nav /> should exist', () => {
-            cy.get('sticky-nav').should('exist');
+        it('<scrolling-nav /> should exist', () => {
+            cy.get('scrolling-nav').should('exist');
         });
 
         it('There is always an active class applied', () => {
-            cy.get('sticky-nav > ul > li')
-                .should('have.class', 'sticky-nav-active');
+            cy.get('scrolling-nav > ul > li')
+                .should('have.class', 'scrolling-nav-active');
         });
 
         it('Has the right HTML structure', () => {
-            cy.get('sticky-nav')
+            cy.get('scrolling-nav')
                 .first()
                 .children('ul')
                 .should('have.length', 1);
 
-            cy.get('sticky-nav > ul')
+            cy.get('scrolling-nav > ul')
                 .first()
                 .children('li')
                 .should('have.length.above', 0);
 
-            cy.get('sticky-nav > ul > li')
+            cy.get('scrolling-nav > ul > li')
                 .first()
                 .children('a')
                 .should('have.length.above', 0);
         });
 
         it('Clicking a nav item should scroll to that section heading', () => {
-            cy.get('sticky-nav > ul > li')
+            cy.get('scrolling-nav > ul > li')
                 .last()
                 .click();
 
@@ -60,23 +57,26 @@ files.forEach((file) => {
         });
 
         it('Clicking a nav item should make it active', () => {
-            cy.get('sticky-nav > ul > li')
+            cy.get('scrolling-nav > ul > li')
                 .last()
                 .click({ force: true })
-                .should('have.class', 'sticky-nav-active');
+                .should('have.class', 'scrolling-nav-active');
         });
 
         it('Clicking a nav item should update the URL fragment', () => {
-            cy.get('sticky-nav > ul > li')
+            cy.get('scrolling-nav > ul > li')
                 .first()
                 .click()
-                .should('have.class', 'sticky-nav-active');
+                .should('have.class', 'scrolling-nav-active')
+                .should('have.attr', 'data-pretty-url');
 
-            cy.window().location().hash().should('contain', '#sticky-nav-el-0');
+            cy.get('scrolling-nav > ul > li').first().then(e => {
+                cy.window().location().hash().should('contain', e.attr('data-pretty-url'));
+            });
         });
 
         it('Follows accessibility recommendations', () => {
-            cy.get('sticky-nav')
+            cy.get('scrolling-nav')
                 .should('have.attr', 'role', 'navigation');
         });
     })
