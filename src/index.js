@@ -319,7 +319,7 @@ const init = () => {
             const navBottom = this.getBoundingClientRect().bottom;
             const sectionBottom = sectionHeading.offsetTop;
             const sectionHeight = sectionHeading.clientHeight;
-            window.scroll({ top: sectionBottom - sectionHeight - navBottom });
+            this.getScrollableContainer().node.scroll({ top: sectionBottom - sectionHeight - navBottom });
         }
 
         // Generate url hash shown in the url and used to identify sections 
