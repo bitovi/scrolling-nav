@@ -65,7 +65,6 @@ const init = () => {
             const sectionHeadings = this.getSectionHeadings();
 
             if (!sectionHeadings || !sectionHeadings.length) {
-                console.log('No items for <scrolling-nav>');
                 return;
             }
 
@@ -109,7 +108,6 @@ const init = () => {
             let activeHeadingSection;
 
             if (!headingPositions || !headingPositions.length) {
-                console.log('No items for <scrolling-nav>');
                 return;
             }
 
@@ -187,20 +185,26 @@ const init = () => {
             this.mutationObserver.observe(targetNode, config);
         }
 
+        // Handler used to observe & remove scroll event listener
+        scrollHandler = () => {
+            throttle(() => this.updateActiveNavItem(), 100)();
+        }
+
+        // Handler used to observe & remove resize event listener
+        resizeHandler = () => {
+            if (this.nodesAreSame(this.currentNodeArr, this.getSectionHeadings())) {
+                this.updateActiveNavItem();
+            }
+        }
+
         // Watches the scroll and updates what is active + if the <sticky-nav> should be sticky or not.
         observeScrolling() {
-            this.scrollEventListener = this.getScrollableContainer().node.addEventListener('scroll', throttle(() => {
-                this.updateActiveNavItem();
-            }, 100));
+            this.getScrollableContainer().node.addEventListener('scroll', this.scrollHandler);
         }
 
         // Watches the resiving and updates what is active + if the <sticky-nav> should be sticky or not.
         observeResizing() {
-            this.resizeEventListener = this.getScrollableContainer().node.addEventListener('resize', () => {
-                if (this.nodesAreSame(this.currentNodeArr, this.getSectionHeadings())) {
-                    this.updateActiveNavItem();
-                }
-            });
+            this.getScrollableContainer().node.addEventListener('resize', this.resizeHandler);
         }
 
         // Determines if two arrays of nodes are the same.
@@ -310,8 +314,8 @@ const init = () => {
         disconnectedCallback() {
             // Disconnect all observers.
             this.mutationObserver.disconnect();
-            this.scrollEventListener.removeEventListener();
-            this.resizeEventListener.removeEventListener();
+            this.getScrollableContainer().node.removeEventListener('scroll', this.scrollHandler);
+            this.getScrollableContainer().node.removeEventListener('resize', this.resizeHandler);
         }
 
         // Scroll to heading so it is fully visible below navbar
