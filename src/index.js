@@ -185,18 +185,6 @@ const init = () => {
             this.mutationObserver.observe(targetNode, config);
         }
 
-        // Handler used to observe & remove scroll event listener
-        scrollHandler = () => {
-            throttle(() => this.updateActiveNavItem(), 100)();
-        }
-
-        // Handler used to observe & remove resize event listener
-        resizeHandler = () => {
-            if (this.nodesAreSame(this.currentNodeArr, this.getSectionHeadings())) {
-                this.updateActiveNavItem();
-            }
-        }
-
         // Watches the scroll and updates what is active + if the <sticky-nav> should be sticky or not.
         observeScrolling() {
             this.getScrollableContainer().node.addEventListener('scroll', this.scrollHandler);
@@ -303,6 +291,18 @@ const init = () => {
             // Initialize the navbar at the state of its items.
             this.drawNavItems();
             this.updateActiveNavItem(initialHash);
+
+            // Handler used to observe & remove scroll event listener
+            this.scrollHandler = () => {
+                throttle(() => this.updateActiveNavItem(), 100)();
+            }
+
+            // Handler used to observe & remove resize event listener
+            this.resizeHandler = () => {
+                if (this.nodesAreSame(this.currentNodeArr, this.getSectionHeadings())) {
+                    this.updateActiveNavItem();
+                }
+            }
 
             // Set up observers.
             this.observeMutations();
