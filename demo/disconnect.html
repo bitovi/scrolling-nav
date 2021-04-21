@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nav Demo</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+    <style>
+        .my-scrolling-nav {
+            position: sticky;
+            top: 0;
+        }
+
+        .my-scrolling-nav > ul {
+            scroll-behavior: smooth;
+        }
+
+        button {
+            margin: 1rem;
+        }
+    </style>
+
+    <button id="connect-btn">Connect Nav</button>
+    <button id="disconnect-btn">Remove Nav</button>
+
+    <script src="../src/index.js"></script>
+    <script src="./script.js"></script>
+
+    <script>
+
+        window.addListeners = [];
+        window.removeListeners = [];
+
+        const oldAddEventListener = window.EventTarget.prototype.addEventListener;
+        const oldRemoveEventListener = window.EventTarget.prototype.removeEventListener;        
+
+        window.EventTarget.prototype.addEventListener = function newAddEventListener(event, handler) {
+            window.addListeners.push({ target: this, event, handler });
+            oldAddEventListener.apply(this, arguments);
+        };
+
+        window.EventTarget.prototype.removeEventListener = function newRemoveEventListener(event, handler) {
+            window.removeListeners.push({ target: this, event, handler });
+            oldRemoveEventListener.apply(this, arguments);
+        };
+
+        document.querySelector('#connect-btn').addEventListener('click', () => {
+            const scrollingNav = document.createElement('scrolling-nav');
+            scrollingNav.classList.add('my-scrolling-nav');
+            document.body.prepend(scrollingNav);
+            document.querySelector('#connect-btn').remove();
+        }, { once: true });
+
+        document.querySelector('#disconnect-btn').addEventListener('click', () => {
+            document.querySelector('.my-scrolling-nav').remove();
+            document.querySelector('#disconnect-btn').remove();
+        }, { once: true });
+    </script>
+
+</body>
+</html>

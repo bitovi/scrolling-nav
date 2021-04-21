@@ -33,7 +33,7 @@ const template = `
             display: -webkit-box;
         }
         
-        scrolling-nav>ul>li {
+        scrolling-nav > ul > li {
             display: block;
             float: left;
             cursor: pointer;
@@ -187,11 +187,21 @@ const init = () => {
 
         // Watches the scroll and updates what is active + if the <sticky-nav> should be sticky or not.
         observeScrolling() {
+            this.scrollHandler = () => {
+                throttle(() => this.updateActiveNavItem(), 100)();
+            }
+
             this.getScrollableContainer().node.addEventListener('scroll', this.scrollHandler);
         }
 
         // Watches the resiving and updates what is active + if the <sticky-nav> should be sticky or not.
         observeResizing() {
+            this.resizeHandler = () => {
+                if (this.nodesAreSame(this.currentNodeArr, this.getSectionHeadings())) {
+                    this.updateActiveNavItem();
+                }
+            }
+
             this.getScrollableContainer().node.addEventListener('resize', this.resizeHandler);
         }
 
@@ -291,18 +301,6 @@ const init = () => {
             // Initialize the navbar at the state of its items.
             this.drawNavItems();
             this.updateActiveNavItem(initialHash);
-
-            // Handler used to observe & remove scroll event listener
-            this.scrollHandler = () => {
-                throttle(() => this.updateActiveNavItem(), 100)();
-            }
-
-            // Handler used to observe & remove resize event listener
-            this.resizeHandler = () => {
-                if (this.nodesAreSame(this.currentNodeArr, this.getSectionHeadings())) {
-                    this.updateActiveNavItem();
-                }
-            }
 
             // Set up observers.
             this.observeMutations();
