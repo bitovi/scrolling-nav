@@ -44,7 +44,9 @@
         };
 
         window.EventTarget.prototype.removeEventListener = function newRemoveEventListener(event, handler) {
-            window.removeListeners.push({ target: this, event, handler });
+            // window.removeListeners.push({ target: this, event, handler });
+            const index = window.addListeners.findIndex(x => x.event === event && x.handler === handler);
+            window.addListeners.splice(index, 1);
             oldRemoveEventListener.apply(this, arguments);
         };
 

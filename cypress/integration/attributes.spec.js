@@ -27,7 +27,7 @@ context('Attributes - heading-selector', () => {
 
     it('Should only inject items into the navbar that match the selector identified by the "heading-selector" attribute', () => {
         cy.get('scrolling-nav > ul')
-            .children("li")
+            .children('li')
             .should('have.length', 4);
     });
 });

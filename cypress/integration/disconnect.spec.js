@@ -7,22 +7,31 @@ context('Connect & Disconnect', () => {
 
     it('should add and remove scroll and resize event listeners', () => {
 
-        cy.get('#connect-btn').click();
-
-        cy.get('scrolling-nav').should('exist');
-
+        // store all listeners
+        let originalListeners;
         cy.window().then(win => {
-            const addedListeners = win.addListeners.filter(({ event }) => event === 'scroll' || event === 'resize');
-            expect(addedListeners.length).to.be.greaterThan(1);
+            const scrollAndResizeListeners = win.addListeners.filter(x => x.event === 'scroll' || x.event === 'resize');
+            originalListeners = JSON.parse(JSON.stringify(scrollAndResizeListeners));
         });
 
-        cy.get('#disconnect-btn').click();
+        // add element
+        cy.get('#connect-btn').click({ force: true });
+        cy.get('scrolling-nav').should('exist');
 
+        // ensure new listeners added
+        cy.window().then(win => {
+            const scrollAndResizeListeners = win.addListeners.filter(x => x.event === 'scroll' || x.event === 'resize');
+            expect(scrollAndResizeListeners.length).to.be.greaterThan(originalListeners.length);
+        });
+
+        // remove element
+        cy.get('#disconnect-btn').click({ force: true });
         cy.get('scrolling-nav').should('not.exist');
 
+        // // ensure current listeners === original
         cy.window().then(win => {
-            const removedListeners = win.removeListeners.filter(({ event }) => event === 'scroll' || event === 'resize');
-            expect(removedListeners.length).to.be.greaterThan(1);
+            const scrollAndResizeListeners = win.addListeners.filter(x => x.event === 'scroll' || x.event === 'resize');
+            expect(scrollAndResizeListeners.length).to.be.equal(originalListeners.length);
         });
 
     });
