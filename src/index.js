@@ -338,6 +338,8 @@ function throttle(func) {
     }
 }
 
-if (typeof window !== 'undefined' && typeof HTMLElement !== 'undefined') {
-    init();
+window.onload = () => {
+    if (typeof HTMLElement !== 'undefined') {
+        init();
+    }
 }
