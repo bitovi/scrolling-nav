@@ -16,13 +16,9 @@
 // The 'Template' is where the basic HTML structure and styling is defined.
 // The navbar items are then injected into the <ul> tags found in this template.
 const template = `
-    <style>
-        scrolling-nav::-webkit-scrollbar {
-            display: none;
-        }
-        
+    <style>        
         scrolling-nav {
-            overflow-x: scroll;
+            overflow-x: auto;
             overflow-y: hidden;
             display: block;
             width: 100%;
@@ -48,16 +44,6 @@ const init = () => {
     class ScrollingNav extends HTMLElement {
         constructor() {
             super();
-
-            // The 'scrollContainerSelector' property references the scroll-container-selector attribute optionally defined
-            // by the user. This attributes lets the consumer define what element will be scrolled by the sticky-nav ...
-            // component + where the section headings are. If not defined, it is assumed to be the 'window'.
-            this.scrollContainerSelector = this.getAttribute('scrollable-container-selector');
-
-            // The 'headingSelector' property references the 'heading-selector' attribute optionally defined by the user.
-            // This attribute determines what elements are used as 'headings' which be used to populate the navbar.
-            // If not provided, it will fallback on a H2 tag.
-            this.headingSelector = this.getAttribute('heading-selector') || 'h2';
         }
 
         // Draw all the section headings as items in the nav.
@@ -187,9 +173,7 @@ const init = () => {
 
         // Watches the scroll and updates what is active + if the <sticky-nav> should be sticky or not.
         observeScrolling() {
-            this.scrollHandler = () => {
-                throttle(() => this.updateActiveNavItem(), 100)();
-            }
+            this.scrollHandler = throttle(() => this.updateActiveNavItem());
 
             this.getScrollableContainer().node.addEventListener('scroll', this.scrollHandler);
         }
@@ -289,8 +273,18 @@ const init = () => {
             const templateNode = document.importNode(stickyNavTemplate.content, true);
             this.append(templateNode);
 
-            // Set the 'role' attribute on the <stick-nav/> for accessibility.
+            // Set the 'role' attribute on the <scrolling-nav/> for accessibility.
             this.setAttribute('role', 'navigation');
+
+            // The 'scrollContainerSelector' property references the scroll-container-selector attribute optionally defined
+            // by the user. This attributes lets the consumer define what element will be scrolled by the sticky-nav ...
+            // component + where the section headings are. If not defined, it is assumed to be the 'window'.
+            this.scrollContainerSelector = this.getAttribute('scrollable-container-selector');
+
+            // // The 'headingSelector' property references the 'heading-selector' attribute optionally defined by the user.
+            // // This attribute determines what elements are used as 'headings' which be used to populate the navbar.
+            // // If not provided, it will fallback on a H2 tag.
+            this.headingSelector = this.getAttribute('heading-selector') || 'h2';
 
             // For convenience, define the <ul> tag as the innerEl.
             this.innerEl = this.querySelector('ul');
@@ -335,21 +329,15 @@ const init = () => {
 
 // Throttles the calls of the function provided.
 // Used for scroll events to reduce the expense.
-const throttle = (func, limit) => {
-    let inThrottle;
-
+function throttle(func) {
     return function() {
         const args = arguments;
-        const context = this;
-
-        if (!inThrottle) {
-            func.apply(context, args);
-            inThrottle = true;
-            setTimeout(() => inThrottle = false, limit);
-        }
+        window.requestAnimationFrame(() => {
+            func.apply(this, args);
+        });
     }
 }
 
-setTimeout(() => {
+if (typeof window !== 'undefined' && typeof HTMLElement !== 'undefined') {
     init();
-}, 0);
+}
