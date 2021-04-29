@@ -1,6 +1,6 @@
 {
   "name": "@bitovi/scrolling-nav",
-  "version": "0.0.1-pre.4",
+  "version": "0.0.1-pre.5",
   "private": false,
   "description": "Just drop it in to enable quick navigation to sections of your page.",
   "scripts": {
