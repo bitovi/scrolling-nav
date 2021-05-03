@@ -23,7 +23,6 @@
     "floating"
   ],
   "homepage": "https://github.com/bitovi/sticky-nav#readme",
-  "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/bitovi/sticky-nav.git"
@@ -35,7 +34,6 @@
     "/types/index.d.ts"
   ],
   "main": "./src/index.js",
-  "module": "./src/index.js",
   "dependencies": {},
   "devDependencies": {
     "cypress": "^6.8.0",
