@@ -339,7 +339,5 @@ function throttle(func) {
 }
 
 if (typeof window !== 'undefined' && typeof HTMLElement !== 'undefined') {
-    window.onload = () => {
-        init();
-    }
+    init();
 }
