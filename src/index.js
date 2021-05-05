@@ -224,11 +224,11 @@ const init = () => {
                 // The user has specified a container; we will use that.
                 const node = document.querySelector(this.scrollContainerSelector);
 
-                return {
+                return node ? {
                     node,
                     scrollY: node.scrollTop,
                     innerHeight: node.offsetHeight,
-                }
+                } : null;
             }
         }
 
@@ -339,5 +339,14 @@ function throttle(func) {
 }
 
 if (typeof window !== 'undefined' && typeof HTMLElement !== 'undefined') {
-    init();
+
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        init();
+    } else {
+        document.addEventListener('readystatechange', () => {
+            if (document.readyState === 'interactive') {
+                init();
+            }
+        });
+    }
 }
